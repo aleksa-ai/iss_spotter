@@ -1,11 +1,35 @@
 const request = require('request');
 
+const nextISSTimesForMyLocation = function(callback) {
+  fetchMyIP((error, ip) => {
+    if (error) {
+      return callback(error, null);
+    }
+
+    fetchCoordsByIP(ip, (error, loc) => {
+      if (error) {
+        return callback(error, null);
+      }
+
+      fetchISSFlyOverTimes(loc, (error, nextPasses) => {
+        if (error) {
+          return callback(error, null);
+        }
+
+        callback(null, nextPasses);
+      });
+    });
+  });
+};
+
+module.exports = { nextISSTimesForMyLocation };
+
 const fetchMyIP = function(callback) {
   request('https://api.ipify.org?format=json', (error, response, body) => {
     if (error) return callback(error, null);
 
     if (response.statusCode !== 200) {
-      callback(Error(`Status Code ${response.statusCode} when fetching IP: ${body}`), null);
+      return callback(Error(`Status Code ${response.statusCode} when fetching IP: ${body}`), null);
       return;
     }
 
@@ -15,7 +39,7 @@ const fetchMyIP = function(callback) {
 };
 
 const fetchCoordsByIP = function(ip, callback) {
-  request(`https://ipvigilante.com/json/${ip}`, (error, response, body) => {
+  request(`https://freegeoip.app/json/${ip}`, (error, response, body) => {
     if (error) {
       callback(error, null);
       return;
@@ -26,7 +50,7 @@ const fetchCoordsByIP = function(ip, callback) {
       return;
     }
 
-    const { latitude, longitude } = JSON.parse(body).data;
+    const { latitude, longitude } = JSON.parse(body);
     // console.log('lat/lng data:', { latitude, longitude });
 
     callback(null, { latitude, longitude });
@@ -52,27 +76,5 @@ const fetchISSFlyOverTimes = function(coords, callback) {
   });
 };
 
-const nextISSTimesForMyLocation = function(callback) {
-  fetchMyIP((error, ip) => {
-    if (error) {
-      return callback(error, null);
-    }
-
-    fetchCoordsByIP(ip, (error, loc) => {
-      if (error) {
-        return callback(error, null);
-      }
-
-      fetchISSFlyOverTimes(loc, (error, nextPasses) => {
-        if (error) {
-          return callback(error, null);
-        }
-
-        callback(null, nextPasses);
-      });
-    });
-  });
-};
-
-module.exports = {fetchMyIp, fetchCoordsByIp, fetchISSFlyOverTimes, nextISSTimesForMyLocation};
+// module.exports = { fetchMyIp, fetchCoordsByIp, fetchISSFlyOverTimes };
 
